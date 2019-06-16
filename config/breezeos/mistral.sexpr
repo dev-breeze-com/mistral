@@ -1,0 +1,54 @@
+(PACKAGE
+	(METADATA
+		(identifier 'mistral')
+		(compression 'xz')
+		(type 'runtime')
+		(namespace 'www.breezeos.org::admin::mistral')
+		(source 'www.breezeos.com')
+		(locale 'en_US')
+		(vendor 'www.breezeos.com')
+		(vendor-url 'http://sales.tsert.com')
+		(creator 'dev@breezeos.com')
+		(maintainer 'dev@breezeos.com')
+		(archive-creator 'www.breezeos.com')
+		(archive-maintainer 'www.breezeos.com')
+		(license 'GNU GENERAL PUBLIC LICENSE V3')
+		(version '0.9.0')
+		(priority 'optional')
+		(section 'admin')
+		(archive-pkgsrc 'breeze')
+		(archive-source 'All/source/mistral-0.9.0.txz')
+		(title 'mistral (make an initial ramdisk)')
+		(filepath 'All/admin/mistral_0.9.0_amd64.tkg')
+		(has-script 'true')
+		(has-sharedlib 'false')
+		(rc-daemon 'false')
+		(archive-md5sum '%fill-in%')
+		(archive-sha1sum '%fill-in%')
+		(archive-sha256sum '%fill-in%')
+		(archive-sha512sum '%fill-in%')
+	)
+	(DESCRIPTIONS
+		(DESCRIPTION
+			(annotations '')
+			(bugs '')
+			(locale 'en_US')
+			(mesg '')
+			(tags '')
+			(text 'mistral [make an initial ramdisk]
+
+mistral is used to create an initial ramdisk that is loaded at
+the same time as the kernel. The initial ramdisk is responsible
+for loading kernel modules [such a filesystem or SCSI controller
+module] that are needed to mount the root filesystem.
+
+The "initrd" is implemented as an initramfs. See the kernel docs
+for more information.')
+		)
+	)
+	(DEPENDS
+		( type, identifier, op, version, tracking )
+		( 'depends', 'glibc', '>=', '2.23', '' )
+		( 'depends', 'bash', '>=', '4.0', '' )
+	)
+)
