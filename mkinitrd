@@ -63,6 +63,8 @@
 PATH="/bin:/sbin:/usr/bin:/usr/sbin:/usr/libexec"
 export PATH
 
+NOCOLORS=false
+
 MKINITRD_VERSION="0.9.0"
 MKINITRD_NAME="BreezeOS Initrd"
 
@@ -71,6 +73,8 @@ BIN_RSYNC=$(which rsync)
 BIN_BLKID=$(which blkid)
 BIN_LSBLK=$(which lsblk)
 BIN_CRYPT=$(which cryptsetup)
+BIN_MKSELF="/usr/share/mistral/runself/makeself.sh"
+HDR_MKSELF="/usr/share/mistral/runself/makeself-header.sh"
 
 # Don't include these things from /lib/udev/ in the initrd image
 LIBUDEV_BLACKLIST="\
@@ -89,61 +93,70 @@ root filesystem, or other modules that might be needed before the
 root filesystem is available.  Other binaries may be added to the
 initrd, and the script is easy to modify.
 
-  -h      Display help message
-  -v      Display version information
-  -c      Clear the existing initrd tree first
-  -y      Assume yes on all questions
+  -h  Display help message
+  -v  Display version information
+  -c  Clear the existing initrd tree first
+  -y  Assume yes on all questions
 
-  -k      Kernel version to use
-  -L      Add support for LVM partitions
-  -R      Add support for RAID partitions
-  -C      Add support for LUKS partitions
-  -E      Add support for EFI partitions
-  -m      Add the files in /etc/modprobe.d/ and /lib/modprobe.d/ to the initrd
-  -U      Include udev in the initrd
+  -A  Add files to the initrd or runself archive (absolute path only)
+  -B  Build an initrd archive, a runself archive, or busybox <initrd|runself|busybox>.
 
-  -f      Filesystem to use for root partition (must be used with -r)
-  -r      Root partition device (must be used with -f)
-  -o      Output image (default /boot/initramfs-breezeos-<kver>-<arch>.img)
+  -k  Kernel version to use
+  -L  Add support for LVM partitions
+  -R  Add support for RAID partitions
+  -C  Add support for LUKS partitions
+  -E  Add support for EFI partitions
+  -m  Add the files in /etc/modprobe.d/ and /lib/modprobe.d/ to the initrd
+  -U  Include udev in the initrd
 
-  -l      Custom keymap to load. Like, 'nl' or 'de-latin1-nodeadkeys'
-  -H      Device to resume from hibernation. Needs to be the name of
-          the swap partition holding the hibernation image.
-  -F      A space delimited list of filesystems to add to the initrd.
-  -M      A space delimited list of kernel modules to load.
-          Additional options may be added to use when loading the
-          kernel modules (but in this case the entire list must be
-          wrapped with double quotes).  Any dependencies of requested
-          modules will also be added to the initrd.
-  -s      Initrd source tree (default /var/cache/mistral/initrd-tree/)
-  -D      A space delimited pair of luks encrypted block devices and
-          luks names to be unlocked by the initrd using cryptsetup. All
-		  devices that must be unlocked in order to access the root
-		  filesystem must be specified. Can be specified more than once.
-		  Use with '-r' parameter.
-  -K      Use a USB key (fat-formatted) to unlock the root LUKS volume
-          The parameter value is filename of a keyfile, as well as the label
-          (or uuid) of the partition this file is on.  This way, you can unlock
-          your computer automatically if you have a USB stick with your LUKS
-          key inserted at boot. A passphrase will still be asked if the LUKS
-          key can not be found.
-          For example, if your USB thumb drive has a FAT partition with label
-          "BRZCRYPTO" and the actual keyfile is called "/keys/breezeos.luks",
-          then you need to pass: -K LABEL=BRZCRYPTO:/keys/breezeos.luks
-  -b      Add /sbin/btrfs to enable scanning for a root filesystem that is
-          part of a Btrfs multi-device filesystem.
-  -P      Specify an initrd prefix, e.g. breezeos.
-  -S      Add support for boot splash, .i.e fbsplash or plymouth
-  -T      Specify boot splash theme, .e.g. breezeos, or breezeos:1280x1024
-  -Z      Specify compression command, i.e. gzip or xz
-  -N      Specify the initrd name, 'BreezeOS Initrd'.
-  -V      Specify a directory for the overlay file tree
+  -f  Filesystem to use for root partition (must be used with -r)
+  -r  Root partition device (must be used with -f)
+  -o  Output image (default /boot/initramfs-breezeos-<kver>-<arch>.img)
 
-A simple example:  Build an initrd for a reiserfs root partition:
+  -l  Custom keymap to load. Like, 'nl' or 'de-latin1-nodeadkeys'
+  -H  Device to resume from hibernation. Needs to be the name of
+      the swap partition holding the hibernation image.
+  -F  A space delimited list of filesystems to add to the initrd.
+  -M  A space delimited list of kernel modules to load.
+      Additional options may be added to use when loading the
+      kernel modules (but in this case the entire list must be
+      wrapped with double quotes).  Any dependencies of requested
+      modules will also be added to the initrd.
+  -s  Initrd source tree (default /var/cache/mistral/initrd-tree/)
+  -D  A space delimited pair of luks encrypted block devices and
+      luks names to be unlocked by the initrd using cryptsetup. All
+      devices that must be unlocked in order to access the root
+      filesystem must be specified. Can be specified more than once.
+      Use with '-r' parameter.
+  -K  Use a USB key (fat-formatted) to unlock the root LUKS volume
+      The parameter value is filename of a keyfile, as well as the label
+      (or uuid) of the partition this file is on.  This way, you can unlock
+      your computer automatically if you have a USB stick with your LUKS
+      key inserted at boot. A passphrase will still be asked if the LUKS
+      key can not be found.
+      For example, if your USB thumb drive has a FAT partition with label
+      "BRZCRYPTO" and the actual keyfile is called "/keys/breezeos.luks",
+      then you need to pass: -K LABEL=BRZCRYPTO:/keys/breezeos.luks
+  -b  Add /sbin/btrfs to enable scanning for a root filesystem that is
+      part of a Btrfs multi-device filesystem.
+  -P  Specify an initrd prefix, e.g. breezeos.
+  -S  Add support for boot splash, .i.e fbsplash or plymouth
+  -T  Specify boot splash theme, .e.g. breezeos, or breezeos:1280x1024
+  -Z  Specify compression command, i.e. none, gzip or xz
+  -N  Specify the initrd name, 'BreezeOS Initrd'.
+  -V  Specify a directory for the overlay file tree
+  -nocolor  Turn color off
+
+A simple example: Build an initrd for a reiserfs root partition:
+
+  mistral -c -B runself brzpkg, or
+  mistral.runself -c brzpkg
+
+A simple example: Build an initrd for a reiserfs root partition:
 
   mistral -c -F reiserfs
 
-Another example:  Build an initrd image using Linux 2.6.35.4-smp kernel
+Another example: Build an initrd image using Linux 2.6.35.4-smp kernel
 modules for a system with an ext4 root partition on /dev/sdb3:
 
   mistral -c -k 2.6.35.4-smp -M 'mbcache jbd' -F ext4 -f ext4 -r /dev/sdb3
@@ -168,17 +181,38 @@ prompt_yesno() {
   local answer="no"
 
   if [ "$ASSUME_YES" = "yes" ]; then
-	answer="yes"
+  answer="yes"
   else
-	echo -n "[1;33m${1}, proceed (n/y) ? [0m"
-	read answer
+  echo -n "${COLOR_YELLOW}${1}, proceed (n/y) ? ${COLOR_OFF}"
+  read answer
   fi
 
   if [ "$answer" = "y" -o "$answer" = "yes" -o "$answer" = "Y" ]; then
-  	return 0
+    return 0
   fi
 
   return 1
+}
+
+init_colors() {
+
+  if [ -z "$1" ]; then
+	  COLOR_RED="[1;31m"
+	  COLOR_GREEN="[1;32m"
+	  COLOR_YELLOW="[1;33m"
+	  COLOR_MAGENTA="[1;35m"
+	  COLOR_CYAN="[1;36m"
+	  COLOR_OFF="[0m"
+  else
+	  COLOR_RED=""
+	  COLOR_GREEN=""
+	  COLOR_YELLOW=""
+	  COLOR_MAGENTA=""
+	  COLOR_CYAN=""
+	  COLOR_OFF=""
+  fi
+
+  return 0
 }
 
 copy_block_devices() {
@@ -205,7 +239,7 @@ clear_source_tree() {
 
   if [ -d "$RD_LAYOUT" ]; then
     if prompt_yesno "About to delete $RD_LAYOUT" ; then
-		  rm -rf $RD_LAYOUT
+      rm -rf $RD_LAYOUT
     fi
   fi
 
@@ -215,35 +249,40 @@ clear_source_tree() {
 create_source_tree() {
 
   mkdir -p $RD_LAYOUT || exit 1
-	mkdir -p $RD_LAYOUT/usr/lib || exit 1
-  mkdir -p $RD_LAYOUT/etc/rd.conf || exit 1
+  mkdir -p $RD_LAYOUT/bin || exit 1
+  mkdir -p $RD_LAYOUT/usr/bin || exit 1
+  mkdir -p $RD_LAYOUT/usr/lib || exit 1
 
-  # Make sure a kernel module directory exists:
-  mkdir -p $RD_LAYOUT/lib/modules/${RD_KVER} || exit 1
+  if [ "$BUILD_MODE" = "initrd" ]; then
+    mkdir -p $RD_LAYOUT/etc/rd.conf || exit 1
 
-  # Add the initrd-tree skeleton:
-  (
- 	 cd $RD_LAYOUT
-	 tar -xf /usr/share/mistral/initrd-tree.tar.gz
-  )
+    # Make sure a kernel module directory exists:
+    mkdir -p $RD_LAYOUT/lib/modules/${RD_KVER} || exit 1
 
-  # Make sure we have any needed block devices
-  copy_block_devices
+    # Add the initrd-tree skeleton:
+    (
+     cd $RD_LAYOUT
+     tar -xf /usr/share/mistral/initrd-tree.tar.gz
+    )
+
+    # Make sure we have any needed block devices
+    copy_block_devices
+  fi
 
   if [ -d /lib32 -a -h /lib ]; then
-		if [ -d $RD_LAYOUT/lib -a ! -e $RD_LAYOUT/lib64 ]; then
-			mv $RD_LAYOUT/lib $RD_LAYOUT/lib64
-		fi
+    if [ -d $RD_LAYOUT/lib -a ! -e $RD_LAYOUT/lib64 ]; then
+      mv $RD_LAYOUT/lib $RD_LAYOUT/lib64
+    fi
 
-  	( cd $RD_LAYOUT ; ln -s lib64 lib )
+    ( cd $RD_LAYOUT ; ln -s lib64 lib )
   fi
 
   if [ -d /usr/lib32 -a -h /usr/lib ]; then
-		if [ -d $RD_LAYOUT/usr/lib -a ! -e $RD_LAYOUT/usr/lib64 ]; then
-  		mv $RD_LAYOUT/usr/lib $RD_LAYOUT/usr/lib64
-		fi
+    if [ -d $RD_LAYOUT/usr/lib -a ! -e $RD_LAYOUT/usr/lib64 ]; then
+      mv $RD_LAYOUT/usr/lib $RD_LAYOUT/usr/lib64
+    fi
 
-  	( cd $RD_LAYOUT ; ln -s usr/lib64 usr/lib )
+    ( cd $RD_LAYOUT/usr ; ln -s lib64 lib )
   fi
 
   return 0
@@ -252,21 +291,63 @@ create_source_tree() {
 build_busybox() {
 
   mkdir -p $RD_BUSYBOX || exit 1
-	
+  
   # Build the initrd-tree busybox:
   (
-		cd $RD_BUSYBOX
+    cd $RD_BUSYBOX
 
-		tar -xf /usr/share/mistral/busybox-1.31.0.tar.xz
-		make menuconfig && make
+    tar -xf /usr/share/mistral/busybox-1.31.0.tar.xz
+    make menuconfig && make
 
-		if [ $? = 0 ]; then
-			cp busybox $RD_LAYOUT/bin/
-		else
-			echo "[1;31mError: failed to build packaged busybox[0m"
-		fi
+    if [ $? = 0 ]; then
+      cp busybox $RD_LAYOUT/bin/
+    else
+      echo "${COLOR_RED}Error: failed to build packaged busybox${COLOR_OFF}"
+    fi
   )
 
+  return 0
+}
+
+build_runself_archive() {
+
+  local pkgname="$1"
+  local pkgpath="$2"
+  local pattern="$(echo "$2" |  sed -re 's/[\/]+/\\\//g')"
+  local runname="$(basename $RD_OUTPUT)"
+
+  unlink $RD_LAYOUT/$pkgname 2> /dev/null
+
+  cat /usr/share/mistral/runself/dorun.sh | 
+    sed -e "s/@pkgpath@/$pattern/g" \
+		-e "s/@pkgname@/$pkgname/g" > $RD_LAYOUT/bin/dorun.sh
+    chmod a+x $RD_LAYOUT/bin/dorun.sh
+
+  if [ "$RD_OUTPUT" != "$(basename $RD_OUTPUT)" ]; then
+    mkdir -p $(dirname $RD_OUTPUT) | exit 1
+  fi
+
+  if [ -e "$RD_OUTPUT" ]; then
+    echo "${COLOR_CYAN}Saving previous runself archive $RD_OUTPUT ${COLOR_OFF}"
+    mv -f $RD_OUTPUT ${RD_OUTPUT}.old
+  fi
+
+  # Wrap the runself app as a shell and compressed tar archive
+  (
+    cd $RD_LAYOUT
+    $BIN_MKSELF --noclobber -Z $COMPRESSION \
+	  --skip-ifexists $pkgpath \
+      --sha512 --sha256 --md5 \
+      --target /var/lib/runself/$pkgname \
+      --header $HDR_MKSELF \
+      --package $LSMFILE \
+      --license $LICENSE \
+      $RD_LAYOUT \
+      $RD_OUTPUT "$LSMTITLE" \
+      ./bin/dorun.sh
+  )
+
+  echo "${COLOR_GREEN}Created runself archive $runname -- done${COLOR_OFF}"
   return 0
 }
 
@@ -276,14 +357,14 @@ build_initrd_image() {
   copy_block_devices
 
   if [ "$RD_OUTPUT" = "$(basename $RD_OUTPUT)" ]; then
-		RD_OUTPUT=/boot/$RD_OUTPUT
+    RD_OUTPUT=/boot/$RD_OUTPUT
   fi
 
   mkdir -p $(dirname $RD_OUTPUT) || exit 1
 
   if [ -e "$RD_OUTPUT" ]; then
-    echo "[1;36mSaving previous ramdisk $RD_OUTPUT [0m"
-		mv -f $RD_OUTPUT ${RD_OUTPUT}.old
+    echo "${COLOR_CYAN}Saving previous ramdisk $RD_OUTPUT ${COLOR_OFF}"
+    mv -f $RD_OUTPUT ${RD_OUTPUT}.old
   fi
 
   # Wrap the initrd as an initramfs image and move it into place:
@@ -294,9 +375,9 @@ build_initrd_image() {
 
   RD_CMDLINE="$RD_CMDLINE ro quiet vga=792 net.ifnames=0 console=tty1 consoleblank=0"
 
-  echo "[1;32mCreated ramdisk $RD_OUTPUT -- done[0m"
-  echo "[1;33mBoot cmdline is:[0m"
-  echo "    [1;36m$RD_CMDLINE[0m"
+  echo "${COLOR_GREEN}Created ramdisk $RD_OUTPUT -- done${COLOR_OFF}"
+  echo "${COLOR_YELLOW}Boot cmdline is:${COLOR_OFF}"
+  echo "    ${COLOR_CYAN}$RD_CMDLINE${COLOR_OFF}"
   echo "Be sure to update your boot loader !"
   return 0
 }
@@ -308,17 +389,47 @@ unify_libs() {
 
 copy_overlay() {
 
-  echo "[1;36mCopying overlay file tree $RD_OVERLAY [0m"
+  for entry in $RD_OVERLAY ; do
+    if [ -d "$entry" ]; then
+      echo "${COLOR_CYAN}Copying overlay file tree $entry ${COLOR_OFF}"
+      if [ -z "$BIN_RSYNC" ]; then
+        cp -au $entry/* $RD_LAYOUT/
+      else
+        $BIN_RSYNC -avu $entry/* $RD_LAYOUT/
+      fi
+    elif file "$entry" | grep -qF 'compressed data' ; then
+      if echo "$entry" | grep -qE '[.]tar[.](gz|xz|bz|bz2)$|[.]t[gxb]z|tbz2$' ; then
+        echo "${COLOR_CYAN}Extracting overlay file tree $entry ${COLOR_OFF}"
+        tar -C $RD_LAYOUT/ -xf $entry
+      elif echo "$entry" | grep -qE '[.]tkg$' ; then
+        arcname="$(unzip -l $entry | grep -m1 archive | sed 's/^.*archive/archive/g')"
+        if [ "$pkgname" != "archive.sh" ]; then
+          echo "${COLOR_CYAN}Extracting overlay file tree $entry ${COLOR_OFF}"
+          unzip -p $entry $arcname | tar -C $RD_LAYOUT/ -xf -
+        else
+          echo "${COLOR_RED}Error: cannot extract a runself onto another runself ${COLOR_OFF}"
+        fi
+      fi
+    else
+      echo "${COLOR_RED}Error: no such folder -- $folder ${COLOR_OFF}"
+    fi
+  done
 
-  if [ -d "$RD_OVERLAY" ]; then
-		if [ -z "$BIN_RSYNC" ]; then
-			cp -au $RD_OVERLAY/* $RD_LAYOUT/
-		else
-			$BIN_RSYNC -avu $RD_OVERLAY/* $RD_LAYOUT/
-		fi
-  else
-		echo "[1;31mError: no such overlay layout folder[0m"
-  fi
+  return 0
+}
+
+copy_additional_files() {
+
+  for path in $RD_ADDFILES ; do
+    if [ -n "$path" ]; then
+       if [ -e $path ]; then
+        rm -f $RD_LAYOUT/${path}
+        cp -P --parents $path $RD_LAYOUT/
+      else
+         echo "${COLOR_MAGENTA}Error: no such file -- $path${COLOR_OFF}"
+      fi
+    fi
+  done
 
   return 0
 }
@@ -328,60 +439,75 @@ copy_binaries() {
   local bin=""
   local times=0
 
-  echo "[1;36mCopying binaries ...[0m"
+  echo "${COLOR_CYAN}Copying binaries ...${COLOR_OFF}"
 
   for binary in $BINARIES ; do
-		bin="`which $binary`"
+    bin="`which $binary`"
+    echo "${COLOR_YELLOW}Copying binary $bin ...${COLOR_OFF}"
 
-		if [ -n "$bin" ]; then
-			if [ -e $bin ]; then
+    if [ -n "$bin" ]; then
+      if [ -e $bin ]; then
         rm -f $RD_LAYOUT/${bin}
-				cp -P --parents $bin $RD_LAYOUT/
-			else
-				echo "[1;35mError: no such binary -- $bin[0m"
-			fi
-		fi
+      cp -P --parents $bin $RD_LAYOUT/
+       else
+        echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
+      fi
+    fi
   done
 
+  echo "${COLOR_CYAN}Copying filesystem binaries '$RD_FILESYSTEMS' ...${COLOR_OFF}"
+
   for binary in $RD_FILESYSTEMS ; do
-		bin="`which mkfs.${binary}`"
+    bin="`which mkfs.${binary}`"
 
-		if [ -n "$bin" ]; then
-			if [ -e $bin ]; then
+    if [ -n "$bin" ]; then
+      if [ -e $bin ]; then
         rm -f $RD_LAYOUT/${bin}
-				cp -P --parents $bin $RD_LAYOUT/
-			else
-				echo "[1;35mError: no such binary -- $bin[0m"
-			fi
-		fi
+        cp -P --parents $bin $RD_LAYOUT/
+      else
+        echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
+      fi
+    fi
 
-		bin="`which fsck.${binary}`"
+    bin="`which fsck.${binary}`"
 
-		if [ -n "$bin" ]; then
-			if [ -e $bin ]; then
+    if [ -n "$bin" ]; then
+      if [ -e $bin ]; then
         rm -f $RD_LAYOUT/${bin}
-				cp -P --parents $bin $RD_LAYOUT/
-			else
-				echo "[1;35mError: no such binary -- $bin[0m"
-			fi
-		fi
-	done
+        cp -P --parents $bin $RD_LAYOUT/
+      else
+        echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
+      fi
+    fi
+  done
 
   return 0
 }
 
 copy_libraries() {
 
-  echo "[1;36mCopying libraries ...[0m"
+  local excludes="$1"
+
+  echo "${COLOR_CYAN}Copying libraries ...${COLOR_OFF}"
 
   # First copy the essential glibc files:
-  if [ "`uname -a`" = "x86_64" -o "`uname -a`" = "aarch64" ]; then
-    find /lib /lib64 -name "ld-*so*" -o -name "libnss_files*so*" -o -name "libnss_compat*so*" 2> /dev/null | xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
-  else
-    find /lib /lib64 -name "ld-*so*" -o -name "libnss_files*so*" -o -name "libnss_compat*so*" 2> /dev/null | xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
+  if [ "$excludes" = "prune" ]; then
+#  excludes="/lib/modules/ -prune /lib64/modules -prune"
+#  excludes="$excludes /lib/udev/ -prune /lib64/udev -prune"
+
+		find /lib64 /lib -name "ld-*so*" \
+			-o -name "libnss_files*so*" \
+			-o -name "libnss_compat*so*" | \
+	  	egrep -v '/(lib|lib64)/(modules|udev)/' | \
+			xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
+	else
+		find /lib64 /lib -name "ld-*so*" \
+			-o -name "libnss_files*so*" \
+			-o -name "libnss_compat*so*" | \
+			xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
   fi
 
-  # Then copy all remaining libs our initrd files link against:
+  # Then copy all remaining libs our initrd or runself files link against:
   COUNT=1
   PRFX=$(tempfile --prefix ldd-)
   TMPFILE=${PRFX}${COUNT}
@@ -424,16 +550,16 @@ copy_libraries() {
 
 copy_modules() {
 
-  echo "[1;33mCopying kernel modules ...[0m"
+  echo "${COLOR_YELLOW}Copying kernel modules ...${COLOR_OFF}"
 
   if grep -q "#modprobe reiserfs" $RD_LAYOUT/bin/rd.modprobe.sh ; then
-		rm -f $RD_LAYOUT/bin/rd.modprobe.sh
-		touch $RD_LAYOUT/bin/rd.modprobe.sh
-		chmod 755 $RD_LAYOUT/bin/rd.modprobe.sh
-		echo "# This is a script used to load the kernel modules." >> $RD_LAYOUT/bin/rd.modprobe.sh
-		echo "# To use it, chmod it 755, and then add the insmod" >> $RD_LAYOUT/bin/rd.modprobe.sh
-		echo "# lines needed to load your modules, like this:" >> $RD_LAYOUT/bin/rd.modprobe.sh
-		echo >> $RD_LAYOUT/bin/rd.modprobe.sh
+    rm -f $RD_LAYOUT/bin/rd.modprobe.sh
+    touch $RD_LAYOUT/bin/rd.modprobe.sh
+    chmod 755 $RD_LAYOUT/bin/rd.modprobe.sh
+    echo "# This is a script used to load the kernel modules." >> $RD_LAYOUT/bin/rd.modprobe.sh
+    echo "# To use it, chmod it 755, and then add the insmod" >> $RD_LAYOUT/bin/rd.modprobe.sh
+    echo "# lines needed to load your modules, like this:" >> $RD_LAYOUT/bin/rd.modprobe.sh
+    echo >> $RD_LAYOUT/bin/rd.modprobe.sh
   fi
 
   # Sanitize the modules list first, before any further processing.
@@ -446,83 +572,83 @@ copy_modules() {
   # modules and their arguments, as well as tells us how many
   # times to run through the list
   if ! echo ${RD_MODULES} | grep ':' > /dev/null ; then  # only 1 module specified
-		INDEX=1
-	else
-		# Trim excess ':' which will screw this routine:
-		RD_MODULES=$(echo ${RD_MODULES} | tr -s ':')
-		INDEX=1
+    INDEX=1
+  else
+    # Trim excess ':' which will screw this routine:
+    RD_MODULES=$(echo ${RD_MODULES} | tr -s ':')
+    INDEX=1
 
-		while [ ! "$(echo "${RD_MODULES}" | cut -f $INDEX -d ':' )" = "" ]; do
-			INDEX=$(expr $INDEX + 1)
-		done
+    while [ ! "$(echo "${RD_MODULES}" | cut -f $INDEX -d ':' )" = "" ]; do
+      INDEX=$(expr $INDEX + 1)
+    done
 
-		INDEX=$(expr $INDEX - 1)      # Don't include the null value
-	fi
+    INDEX=$(expr $INDEX - 1)      # Don't include the null value
+  fi
 
-	# Wrap everything in a while loop
-	i=0
+  # Wrap everything in a while loop
+  i=0
 
-	while [ $i -ne $INDEX ]; do
-		i=$(( $i + 1 ))
-		
-		# FULL_MOD is the module plus any arguments (if any)
-		# MODULE is the module name
-		# ARGS is any optional arguments to be passed to the kernel
-		FULL_MOD="$(echo "${RD_MODULES}" | cut -d ':' -f $i)"
-		MODULE="$(echo "$FULL_MOD" | cut -d ' ' -f 1 )"
+  while [ $i -ne $INDEX ]; do
+    i=$(( $i + 1 ))
+    
+    # FULL_MOD is the module plus any arguments (if any)
+    # MODULE is the module name
+    # ARGS is any optional arguments to be passed to the kernel
+    FULL_MOD="$(echo "${RD_MODULES}" | cut -d ':' -f $i)"
+    MODULE="$(echo "$FULL_MOD" | cut -d ' ' -f 1 )"
 
-		# Test for arguments
-		if echo "$FULL_MOD" | grep ' ' > /dev/null; then
-			ARGS=" $(echo "$FULL_MOD" | cut -d ' ' -f 2- )"
-		else
-			unset ARGS
-		fi
+    # Test for arguments
+    if echo "$FULL_MOD" | grep ' ' > /dev/null; then
+      ARGS=" $(echo "$FULL_MOD" | cut -d ' ' -f 2- )"
+    else
+      unset ARGS
+    fi
 
-		# Get MODULE deps and prepare modprobe lines
-		/sbin/modprobe --set-version $RD_KVER --show-depends \
-			--ignore-install $MODULE 2>/dev/null | \
-			grep "^insmod " | cut -f 2 -d ' ' | while read SRCMOD; do
+    # Get MODULE deps and prepare modprobe lines
+    /sbin/modprobe --set-version $RD_KVER --show-depends \
+      --ignore-install $MODULE 2>/dev/null | \
+      grep "^insmod " | cut -f 2 -d ' ' | while read SRCMOD; do
 
-		if ! grep -Eq " $(basename $SRCMOD .ko)(\.| |$)" $RD_LAYOUT/bin/rd.modprobe.sh 2>/dev/null ; then
-			LINE="$(echo "modprobe -v $(basename ${SRCMOD%%.gz} .ko)" )"
+    if ! grep -Eq " $(basename $SRCMOD .ko)(\.| |$)" $RD_LAYOUT/bin/rd.modprobe.sh 2>/dev/null ; then
+      LINE="$(echo "modprobe -v $(basename ${SRCMOD%%.gz} .ko)" )"
 
-			# Test to see if arguments should be passed
-			# Over-ride the previously defined LINE variable if so
-			if [ "$(basename $SRCMOD .ko)" = "$MODULE" ]; then
-				# SRCMOD and MODULE are same, ARGS can be passed
-				LINE="$LINE$ARGS"
-			fi
-		fi
+      # Test to see if arguments should be passed
+      # Over-ride the previously defined LINE variable if so
+      if [ "$(basename $SRCMOD .ko)" = "$MODULE" ]; then
+        # SRCMOD and MODULE are same, ARGS can be passed
+        LINE="$LINE$ARGS"
+      fi
+    fi
 
-		if ! grep -qx "$LINE" $RD_LAYOUT/bin/rd.modprobe.sh ; then
-			echo "$LINE" >> $RD_LAYOUT/bin/rd.modprobe.sh
-		fi
+    if ! grep -qx "$LINE" $RD_LAYOUT/bin/rd.modprobe.sh ; then
+      echo "$LINE" >> $RD_LAYOUT/bin/rd.modprobe.sh
+    fi
 
-		# Try to add the module to the initrd-tree.  This should be done
-		# even if it exists there already as we may have changed compilers
-		# or otherwise caused the modules in the initrd-tree to need
-		# replacement.
-		if cp -a --parents $SRCMOD $RD_LAYOUT 2>/dev/null; then
+    # Try to add the module to the initrd-tree.  This should be done
+    # even if it exists there already as we may have changed compilers
+    # or otherwise caused the modules in the initrd-tree to need
+    # replacement.
+    if cp -a --parents $SRCMOD $RD_LAYOUT 2>/dev/null; then
 
-			echo "OK: $SRCMOD added."
+      echo "OK: $SRCMOD added."
 
-			# If a module needs firmware, copy that too
-			/sbin/modinfo -F firmware "$SRCMOD" | sed 's/^/\/lib\/firmware\//' |
-				while read SRCFW; do
-					if cp -a --parents "$SRCFW" $RD_LAYOUT 2>/dev/null; then
-						echo "OK: $SRCFW added."
-					else
-						echo "WARNING:  Could not find firmware \"$SRCFW\""
-					fi
-				done
-			else
-				echo "WARNING:  Could not find module \"$SRCMOD\""
-			fi
-		done
-	done
+      # If a module needs firmware, copy that too
+      /sbin/modinfo -F firmware "$SRCMOD" | sed 's/^/\/lib\/firmware\//' |
+        while read SRCFW; do
+          if cp -a --parents "$SRCFW" $RD_LAYOUT 2>/dev/null; then
+            echo "OK: $SRCFW added."
+          else
+            echo "WARNING:  Could not find firmware \"$SRCFW\""
+          fi
+        done
+      else
+        echo "WARNING:  Could not find module \"$SRCMOD\""
+      fi
+    done
+  done
 
   # Pregenerate the module dependency information
-  echo "[1;36mPregenerating module dependency information ...[0m"
+  echo "${COLOR_CYAN}Pregenerating module dependency information ...${COLOR_OFF}"
   depmod -a -b $RD_LAYOUT ${RD_KVER}
 
   return 0
@@ -534,7 +660,7 @@ copy_modconf() {
   mkdir -p $RD_LAYOUT/lib || exit 1
 
   cp -a /etc/modprobe.d $RD_LAYOUT/etc/
-	cp -a /lib/modprobe.d $RD_LAYOUT/lib/
+  cp -a /lib/modprobe.d $RD_LAYOUT/lib/
 
   return 0
 }
@@ -560,7 +686,7 @@ EOF
 
 enable_btrfs() {
 
-  echo "[1;36mEnabling filesystem btrfs ...[0m"
+  echo "${COLOR_CYAN}Enabling filesystem btrfs ...${COLOR_OFF}"
   BINARIES="$BINARIES btrfs"
 
   mkdir -p $RD_LAYOUT/sbin || exit 1
@@ -570,7 +696,7 @@ enable_btrfs() {
     chmod 0755 $RD_LAYOUT/sbin/btrfs
     RD_MODULES="${RD_MODULES}:btrfs"
   else
-    echo "[1;31mError:  btrfs binary is missing, Btrfs support not installed ![0m"
+    echo "${COLOR_RED}Error:  btrfs binary is missing, Btrfs support not installed !${COLOR_OFF}"
   fi
 
   return 0
@@ -581,16 +707,16 @@ enable_raid() {
   local MDADM=$(which mdadm)
   local MDMON=$(which mdmon)
 
-  echo "[1;36mEnabling RAID subsystem ...[0m"
+  echo "${COLOR_CYAN}Enabling RAID subsystem ...${COLOR_OFF}"
   BINARIES="$BINARIES mdadm mdmon"
   RD_CMDLINE="$RD_CMDLINE rd.raid"
 
   if [ -n "$MDADM" -a -e $MDADM ]; then
-	cp $MDMON $RD_LAYOUT/sbin/mdmon
-	chmod 0755 $RD_LAYOUT/sbin/mdmon
+  cp $MDMON $RD_LAYOUT/sbin/mdmon
+  chmod 0755 $RD_LAYOUT/sbin/mdmon
   else
-	echo "[1;31mError: mdmon binary is missing, RAID support not installed[0m"
-	return 1
+  echo "${COLOR_RED}Error: mdmon binary is missing, RAID support not installed${COLOR_OFF}"
+  return 1
   fi
 
   mkdir -p $RD_LAYOUT/sbin || exit 1
@@ -598,8 +724,8 @@ enable_raid() {
 
   if [ -n "$MDADM" -a -e $MDADM ]; then
 
-	cp $MDADM $RD_LAYOUT/sbin/mdadm
-	chmod 0755 $RD_LAYOUT/sbin/mdadm
+  cp $MDADM $RD_LAYOUT/sbin/mdadm
+  chmod 0755 $RD_LAYOUT/sbin/mdadm
 
     if [ -z "${RD_MODULES}" ] ; then
       RD_MODULES="dm-mod"
@@ -607,13 +733,13 @@ enable_raid() {
       RD_MODULES="$RD_MODULES:dm-mod"
     fi
 
-	echo 'KERNEL=="dm-[0-9]*", OPTIONS+="db_persist"' > \
-	  $RD_LAYOUT/lib/udev/rules.d/95-dm-initrd.rules
-	if [ -r /etc/mdadm.conf ] ; then
-	  cp /etc/mdadm.conf $RD_LAYOUT/etc
-	fi
+  echo 'KERNEL=="dm-[0-9]*", OPTIONS+="db_persist"' > \
+    $RD_LAYOUT/lib/udev/rules.d/95-dm-initrd.rules
+  if [ -r /etc/mdadm.conf ] ; then
+    cp /etc/mdadm.conf $RD_LAYOUT/etc
+  fi
   else
-	echo "[1;31mError: mdadm binary is missing, RAID support not installed[0m"
+  echo "${COLOR_RED}Error: mdadm binary is missing, RAID support not installed${COLOR_OFF}"
   fi
 
   return 0
@@ -624,8 +750,9 @@ enable_lvm() {
   local LVM=$(which lvm)
   local DMSETUP=$(which dmsetup)
 
-  echo "[1;36mEnabling LVM subsystem ...[0m"
+  echo "${COLOR_CYAN}Enabling LVM subsystem ...${COLOR_OFF}"
   BINARIES="$BINARIES lvm dmsetup multipath"
+
   RD_CMDLINE="$RD_CMDLINE rd.lvm"
 
   mkdir -p $RD_LAYOUT/sbin || exit 1
@@ -638,15 +765,15 @@ enable_lvm() {
   if [ -n "$DMSETUP" -a -e $DMSETUP ]; then
     cp $DMSETUP $RD_LAYOUT/sbin/dmsetup
   else
-    echo "[1;31mError: dmsetup binary is missing, LVM support isn't installed ![0m"
-	return 1
+    echo "${COLOR_RED}Error: dmsetup binary is missing, LVM support isn't installed !${COLOR_OFF}"
+  return 1
   fi
 
   if [ -n "$LVM" -a -e $LVM ]; then
 
     cp $LVM $RD_LAYOUT/sbin/lvm
 
-    find /lib /lib64 -name "libdevmapper*so*" 2> /dev/null | xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
+    find /lib64 /lib -name "libdevmapper*so*" 2> /dev/null | xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
     ( cd $RD_LAYOUT/sbin
       ln -s lvm vgchange 2>/dev/null
       ln -s lvm vgscan 2>/dev/null )
@@ -658,9 +785,9 @@ enable_lvm() {
     fi
 
     echo 'KERNEL=="dm-[0-9]*", OPTIONS+="db_persist"' > \
-			$RD_LAYOUT/lib/udev/rules.d/95-dm-initrd.rules
+      $RD_LAYOUT/lib/udev/rules.d/95-dm-initrd.rules
   else
-    echo "[1;31mError: lvm binary is missing, LVM support isn't installed ![0m"
+    echo "${COLOR_RED}Error: lvm binary is missing, LVM support isn't installed !${COLOR_OFF}"
   fi
 
   return 0
@@ -669,33 +796,33 @@ enable_lvm() {
 badconf_file() {
   # This won't really help with what's *wrong* with the file,
   # but it will at least give them a clue that there's a problem
-  echo "[1;31m/etc/mistral/initrd.conf is bad or does not exist.[0m"
+  echo "${COLOR_RED}/etc/mistral/$1.conf is bad or does not exist.${COLOR_OFF}"
   exit 1
 }
 
 enable_openrc() {
   RD_CMDLINE="$RD_CMDLINE rd.openrc"
-  echo "[1;36mEnabling OpenRC init system ...[0m"
+  echo "${COLOR_CYAN}Enabling OpenRC init system ...${COLOR_OFF}"
   echo "yes" > $RD_LAYOUT/etc/rd.conf/openrc
   return 0
 }
 
 enable_vfatfs() {
 
-  echo "[1;36mEnabling VFat filesystem ...[0m"
+  echo "${COLOR_CYAN}Enabling VFat filesystem ...${COLOR_OFF}"
 
   # Several extra modules are needed to support a vfat formatted USB stick...
   # assuming here we are using a western codepage.
   # This possibly adds doublures, but we clean up the MODULE_LIST further down!
   if ! echo ${RD_MODULES} | grep -q vfat ; then
-		RD_MODULES="${RD_MODULES}:ehci-hcd:uhci-hcd:usb-storage:hid:usbhid"
-		RD_MODULES="${RD_MODULES}:nls_cp437:nls_iso8859-1:msdos:fat:vfat"
+    RD_MODULES="${RD_MODULES}:ehci-hcd:uhci-hcd:usb-storage:hid:usbhid"
+    RD_MODULES="${RD_MODULES}:nls_cp437:nls_iso8859-1:msdos:fat:vfat"
   fi
 
   # This possibly adds doublures, but we clean up the MODULE_LIST further down!
   if ! echo ${RD_MODULES} | grep -q usb_storage ; then
-		RD_MODULES="$RD_MODULES:scsi_mod:sd_mod:sr_mod:dm-mod:dm-crypt:usbhid:usb_storage"
-		RD_MODULES="$RD_MODULES:ehci-hcd:uhci-hcd:xhci-hcd:ehci-pci:usbhid:hid_generic"
+    RD_MODULES="$RD_MODULES:scsi_mod:sd_mod:sr_mod:dm-mod:dm-crypt:usbhid:usb_storage"
+    RD_MODULES="$RD_MODULES:ehci-hcd:uhci-hcd:xhci-hcd:ehci-pci:usbhid:hid_generic"
   fi
 
   return 0
@@ -703,12 +830,12 @@ enable_vfatfs() {
 
 enable_efifs() {
 
-  echo "[1;36mEnabling EFI kernel modules ...[0m"
+  echo "${COLOR_CYAN}Enabling EFI kernel modules ...${COLOR_OFF}"
 
   if [ -z "${RD_MODULES}" ] ; then
-		RD_MODULES="efivarfs:efi-pstore"
+    RD_MODULES="efivarfs:efi-pstore"
   elif ! echo ${RD_MODULES} | grep -q efivarfs ; then
-		RD_MODULES="$RD_MODULES:efivarfs:efi-pstore"
+    RD_MODULES="$RD_MODULES:efivarfs:efi-pstore"
   fi
 
   enable_vfatfs
@@ -721,14 +848,14 @@ enable_luks() {
   BINARIES="$BINARIES cryptsetup"
 
   if echo "$RD_LUKSKEY" | grep -qiF 'LABEL' ; then
-	  RD_CMDLINE="$RD_CMDLINE rd.luks=auto"
+    RD_CMDLINE="$RD_CMDLINE rd.luks=auto"
   elif echo "$RD_LUKSDEV" | grep -qiF 'LABEL' ; then
-	  RD_CMDLINE="$RD_CMDLINE rd.luks=auto"
-	else
-	  RD_CMDLINE="$RD_CMDLINE rd.luks"
-	fi
+    RD_CMDLINE="$RD_CMDLINE rd.luks=auto"
+  else
+    RD_CMDLINE="$RD_CMDLINE rd.luks"
+  fi
 
-  echo "[1;36mEnabling LUKS encryption ...[0m"
+  echo "${COLOR_CYAN}Enabling LUKS encryption ...${COLOR_OFF}"
   mkdir -p $RD_LAYOUT/sbin || exit 1
 
   if [ -n "$BIN_CRYPT" -a -e $BIN_CRYPT ]; then
@@ -750,15 +877,15 @@ EOF
 
     if [ -n "$RD_LUKSDEV" ]; then
       # Write the list of LUKS devices to the initrd-tree:
-    	echo $RD_LUKSDEV > $RD_LAYOUT/etc/rd.conf/luksdev
-		fi
+      echo $RD_LUKSDEV > $RD_LAYOUT/etc/rd.conf/luksdev
+    fi
 
-  	if [ -n "$RD_LUKSKEY" ]; then
-  	  # Finally, write the LUKS keys to the initrd-tree:
-     	echo $RD_LUKSKEY > $RD_LAYOUT/etc/rd.conf/lukskey
+    if [ -n "$RD_LUKSKEY" ]; then
+      # Finally, write the LUKS keys to the initrd-tree:
+       echo $RD_LUKSKEY > $RD_LAYOUT/etc/rd.conf/lukskey
     fi
   else
-    echo "[1;31mCryptsetup binary is missing, CRYPT support isn't installed ![0m"
+    echo "${COLOR_RED}Cryptsetup binary is missing, CRYPT support isn't installed !${COLOR_OFF}"
   fi
 
   enable_vfatfs
@@ -768,7 +895,7 @@ EOF
 
 enable_fbsplash() {
 
-  echo "[1;36mEnabling frame buffer boot splash ...[0m"
+  echo "${COLOR_CYAN}Enabling frame buffer boot splash ...${COLOR_OFF}"
 
   RD_CMDLINE="$RD_CMDLINE rd.splash=fbsplash"
 
@@ -791,7 +918,7 @@ enable_fbsplash() {
 
 enable_mistral() {
 
-  echo "[1;36mEnabling Mistral boot splash ...[0m"
+  echo "${COLOR_CYAN}Enabling Mistral boot splash ...${COLOR_OFF}"
 
   mkdir -p $RD_LAYOUT/etc/mistral || exit 1
   mkdir -p $RD_LAYOUT/usr/share/mistral || exit 1
@@ -816,7 +943,7 @@ enable_mistral() {
 enable_plymouth() {
 
   RD_CMDLINE="$RD_CMDLINE rd.splash=plymouth"
-  echo "[1;36mEnabling Plymouth boot splash ...[0m"
+  echo "${COLOR_CYAN}Enabling Plymouth boot splash ...${COLOR_OFF}"
 
   mkdir -p $RD_LAYOUT/etc/plymouth || exit 1
   echo "plymouth" > $RD_LAYOUT/etc/rd.conf/splash
@@ -824,12 +951,12 @@ enable_plymouth() {
   echo "[Daemon]" > $RD_LAYOUT/etc/plymouth/plymouth.conf
   echo "Theme=$1" >> $RD_LAYOUT/etc/plymouth/plymouth.conf
 
-  echo "[1;31mError: plymouth overlay tree missing ![0m"
-  echo "[1;33mTrying to find copy on current host ![0m"
-	find /usr/share/plymouth/ /usr/libexec/plymouth/ \
-   	/usr/lib/libply* /usr/lib64/libply* \
-   	/usr/bin/plymouth* /usr/sbin/plymouth* \
-   	2> /dev/null | xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
+  echo "${COLOR_RED}Error: plymouth overlay tree missing !${COLOR_OFF}"
+  echo "${COLOR_YELLOW}Trying to find copy on current host !${COLOR_OFF}"
+  find /usr/share/plymouth/ /usr/libexec/plymouth/ \
+     /usr/lib/libply* /usr/lib64/libply* \
+     /usr/bin/plymouth* /usr/sbin/plymouth* \
+     2> /dev/null | xargs -I'{}' cp -P --parents '{}' $RD_LAYOUT/
 
   RD_MODULES="${RD_MODULES}:vga16fb:vesafb:uvesafb:drm_kms_helper"
   RD_MODULES="${RD_MODULES}:savagefb:nvidiafb:radeonfb"
@@ -841,21 +968,21 @@ enable_plymouth() {
 check_opt() {
 
   if [ -z "$2" ]; then
-		echo "[1;31mInvalid or missing argument to option '$1' ![0m"
-		exit 1
+    echo "${COLOR_RED}Invalid or missing argument to option '$1' !${COLOR_OFF}"
+    exit 1
   fi
 
   if [ "x${3}" = "xsystem/folder" ]; then
     if [ ! -d $2 ]; then
-	  	echo "[1;31mInvalid folder argument for '$1' ![0m"
-			exit 1
-		fi
+      echo "${COLOR_RED}Invalid folder argument for '$1' !${COLOR_OFF}"
+      exit 1
+    fi
   elif [ -n "$3" ]; then
     if ! echo "$2" | egrep -q "$3" ; then
-			echo "[1;31mInvalid argument for option '$1' ![0m"
-			exit 1
-		fi
-	fi
+      echo "${COLOR_RED}Invalid argument for option '$1' !${COLOR_OFF}"
+      exit 1
+    fi
+  fi
 
   return 0
 }
@@ -878,27 +1005,38 @@ RD_PFX="breezeos"
 # The initrd requires udev to function correctly:
 RD_UDEV="yes"
 
-# Parse the config file for options first, the other command line
-# options can override the ones set in /etc/mistral/initrd.conf. 
-if [ -e /etc/mistral/initrd.conf ]; then
-  . /etc/mistral/initrd.conf || badconf_file
-else
-  badconf_file
-fi
-
 # Default values if these aren't previously set.
 RD_LAYOUT=${RD_LAYOUT:-"/var/cache/mistral/initrd-tree"}
 
-RD_BUSYBOX=${RD_BUSYBOX:-"/var/cache/mistral/busybox-tree"}
+COMPRESSION=${COMPRESSION:-"gzip"}
 
 RD_ARCH=${RD_ARCH:-"$(uname -m)"}
 
 RD_KVER=${RD_KVER:-"$(uname -r)"}
 
-RD_FILESYSTEMS=${RD_FILESYSTEMS:-"ext2 ext3 ext4 vfat"}
-
 # We need a sensible default for this special case:
 RD_OUTPUT=${RD_OUTPUT:-"/boot/initramfs-${RD_PFX}-${RD_KVER}-${RD_ARCH}.img"}
+
+# Parse the config file for options first, the other command line
+# options can override the ones set in /etc/mistral/initrd.conf. 
+if [ "`basename $0`" = "mistral.runself" ]; then
+  BUILD_MODE="runself"
+
+  if [ -e /etc/mistral/runself.conf ]; then
+  . /etc/mistral/runself.conf || badconf_file "runself"
+  else
+    badconf_file "runself"
+  fi
+elif [ -e /etc/mistral/initrd.conf ]; then
+  BUILD_MODE="initrd"
+  . /etc/mistral/initrd.conf || badconf_file "initrd"
+  RD_FILESYSTEMS=${RD_FILESYSTEMS:-"ext2 ext3 ext4 vfat"}
+  RD_BUSYBOX=${RD_BUSYBOX:-"/var/cache/mistral/busybox-tree"}
+else
+  badconf_file "initrd"
+fi
+
+init_colors
 
 # Parse options:
 while [ ! -z "$1" ]; do
@@ -945,106 +1083,140 @@ while [ ! -z "$1" ]; do
       RD_OPENRC="yes"
       shift
       ;;
+    -A)
+    check_opt "$1" "$2"
+      [ -n "$RD_ADDFILES" ] && RD_ADDFILES="$RD_ADDFILES $2"
+      [ -z "$RD_ADDFILES" ] && RD_ADDFILES="$2"
+      shift 2
+      ;;
+    -B)
+      # canonicalize filename:
+      check_opt "$1" "$2" '^(initrd|runself|busybox)$'
+      BUILD_MODE="$2"
+      RD_LAYOUT="/var/cache/mistral/${2}-tree/"
+      . /etc/mistral/runself.conf || badconf_file
+      shift 2
+      ;;
     -f)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_ROOTFS="$2"
       shift 2
       ;;
     -r)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_ROOTDEV="$2"
       shift 2
       ;;
     -k)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_KVER="$2"
       shift 2
       ;;
     -l)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_KEYMAP="$2"
       shift 2
       ;;
     -H)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_RESUME="$2" 
       shift 2
       ;;
     -P)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_PFX="$2" 
       shift 2
       ;;
     -F)
-			check_opt "$1" "$2"
-			if [ -z "$RD_FILESYSTEMS" ] ; then
-				RD_FILESYSTEMS="`echo "$2" | tr -s ':' ' '`"
-			else
-				RD_FILESYSTEMS="${RD_FILESYSTEMS}:`echo "$2" | tr -s ':' ' '`"
-			fi
+    check_opt "$1" "$2"
+    if [ -z "$RD_FILESYSTEMS" ] ; then
+      RD_FILESYSTEMS="`echo "$2" | tr -s ':' ' '`"
+    else
+      RD_FILESYSTEMS="${RD_FILESYSTEMS} `echo "$2" | tr -s ':' ' '`"
+    fi
       shift 2
       ;;
     -M)
-			check_opt "$1" "$2"
-			if [ -z "$RD_MODULES" ] ; then
-				RD_MODULES="`echo "$2" | tr -s ' ' ':'`"
-			else
-				RD_MODULES="${RD_MODULES}:`echo "$2" | tr -s ' ' ':'`"
-			fi
+    check_opt "$1" "$2"
+    if [ -z "$RD_MODULES" ] ; then
+      RD_MODULES="`echo "$2" | tr -s ' ' ':'`"
+    else
+      RD_MODULES="${RD_MODULES}:`echo "$2" | tr -s ' ' ':'`"
+    fi
       shift 2
       ;;
     -o)
       # canonicalize filename:
-	  	check_opt "$1" "$2"
-      RD_OUTPUT="$(readlink -m $2)"
+    check_opt "$1" "$2"
+      RD_OUTPUT_FORCE="$(readlink -m $2)"
       shift 2
       ;;
     -s)
       # canonicalize filename:
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_LAYOUT="$(readlink -m $2)"
       shift 2
       ;;
     -S)
-	  	check_opt "$1" "$2"
+    check_opt "$1" "$2"
       RD_SPLASH="$2"
       shift 2
       ;;
     -T)
-	  	check_opt "$1" "$2"
+      check_opt "$1" "$2"
       RD_SPLASH_THEME="$2"
       shift 2
       ;;
     -V)
-	  	check_opt "$1" "$2" "system/folder"
-      RD_OVERLAY="$2"
+      check_opt "$1" "$2" "system/folder"
+      [ -n "$RD_OVERLAY" ] && RD_OVERLAY="$RD_OVERLAY $2"
+      [ -z "$RD_OVERLAY" ] && RD_OVERLAY="$2"
       shift 2
       ;;
     -K)
-	  	check_opt "$1" "$2"
+      check_opt "$1" "$2"
       RD_LUKSKEY="$2"
       shift 2
       ;;
     -D)
-	  	check_opt "$1" "$2"
+      check_opt "$1" "$2"
       RD_LUKSDEV="$2"
       shift 2
       ;;
-    -Z)
-	  	check_opt "$1" "$2" "^(gzip|xz)$"
-	  	BIN_ZIP="`which $2`"
+    -Z|--zip)
+      check_opt "$1" "$2" "^(gzip|xz|bzip2|none)$"
+      BIN_ZIP="`which $2`"
+      COMPRESSION="$2"
       shift 2
-	  ;;
+    ;;
+    -nocolor)
+      NOCOLORS=true
+      shift 1
+    ;;
     -N)
-	  	check_opt "$1" "$2"
-	  	MKINITRD_NAME="$2"
+      check_opt "$1" "$2"
+      MKINITRD_NAME="$2"
       shift 2
-	  ;;
-    *) # unknown, prevent infinite loop
+    ;;
+    *)
+      if [ "$BUILD_MODE" = "runself" ]; then
+        [ -z "$PKGNAME" ] && PKGNAME="$1"
+        [ -n "$BINARIES" ] && BINARIES="$BINARIES $1"
+        [ -z "$BINARIES" ] && BINARIES="$1"
+      else # unknown, prevent infinite loop
+        echo "${COLOR_YELLOW}Invalid argument $1 !"
+        exit 1
+      fi
       shift
       ;;
   esac
 done
+
+#====== Starts here ======#
+
+[ "$NOCOLORS" = true ] && init_colors "no"
+
+[ -z "$MKINITRD_NAME" ] && MKINITRD_NAME="BreezeOS Initrd"
 
 # If RD_LUKSKEY was set, then set RD_CRYPT=1
 [ -n "$RD_LUKSKEY" ] && RD_CRYPT="yes" && RD_LVM="yes" && RD_RAID="yes"
@@ -1052,36 +1224,107 @@ done
 # If RD_LUKSDEV was set, then set RD_CRYPT=1
 [ -n "$RD_LUKSDEV" ] && RD_CRYPT="yes" && RD_LVM="yes" && RD_RAID="yes"
 
-# If BIN_ZIP was not set, then set it to gzip1
+# If BIN_ZIP was not set, then set it to gzip
 [ -z "$BIN_ZIP" ] && BIN_ZIP="gzip"
 
-# If BIN_ZIP was not set, then set it to gzip1
-[ -z "$MKINITRD_NAME" ] && MKINITRD_NAME="BreezeOS Initrd"
+if [ "$BUILD_MODE" = "busybox" ]; then
+  exec build_busybox
 
-if [ "$RD_PFX" != "breezeos" ]; then
-	RD_OUTPUT="/boot/initramfs-${RD_PFX}-${RD_KVER}-${RD_ARCH}.img"
-fi
+elif [ "$BUILD_MODE" = "initrd" ]; then
+  if ! prompt_yesno "Using kernel version $RD_KVER" ; then
+   exit 1
+  fi
 
-# If kernel modules are needed but the kernel version is absent, exit now:
-if [ ! -d /lib/modules/$RD_KVER ]; then
-  echo "[1;31m;Error: No /lib/modules/$RD_KVER kernel modules tree found ![0m"
-  exit 1
+  if [ -n "$RD_OUTPUT_FORCE" ]; then
+  	RD_OUTPUT="$RD_OUTPUT_FORCE"
+  else
+  	RD_OUTPUT="/boot/initramfs-${RD_PFX}-$RD_KVER-${RD_ARCH}.img"
+  fi
+
+  if ! prompt_yesno "Using output initrd $RD_OUTPUT" ; then
+   exit 1
+  fi
+
+  # If kernel modules are needed but the kernel version is absent, exit now:
+  if [ ! -d /lib/modules/$RD_KVER ]; then
+    echo "${COLOR_RED};Error: No /lib/modules/$RD_KVER kernel modules tree found !${COLOR_OFF}"
+    exit 1
+  fi
+elif [ "$BUILD_MODE" = "runself" ]; then
+  if [ -z "$PKGNAME" ]; then
+    echo "${COLOR_RED}mistral: must specify a command, e.g. brzpkg${COLOR_OFF}"
+    exit 1
+  fi
+
+  if [ -z "$(which $PKGNAME)" ]; then
+    echo "${COLOR_RED}mistral: no such command, e.g. brzpkg${COLOR_OFF}"
+    exit 1
+  fi
+
+  LICENSE="/etc/lsm/catalog/${PKGNAME}.license"
+
+  if [ ! -e "$LICENSE" ]; then
+    echo "${COLOR_RED}mistral: no such license -- $LICENSE !${COLOR_OFF}"
+    exit 1
+  fi
+
+  LSMFILE="/etc/lsm/catalog/${PKGNAME}.lsm"
+
+  if [ ! -e "$LSMFILE" ]; then
+    echo "${COLOR_RED}mistral: no such package file -- $LSMFILE !${COLOR_OFF}"
+    exit 1
+  fi
+
+  LSMTITLE="$(grep -Fi title $LSMFILE | cut -f2 -d: | crunch)"
+
+  if [ ! -e /usr/share/mistral/runself/dorun.sh ]; then
+    echo "${COLOR_RED}mistral: No such script file -- dorun.sh${COLOR_OFF}"
+    exit 1
+  fi
+
+  RD_OUTPUT=${RD_OUTPUT:-"$(pwd)/${PKGNAME}-${RD_ARCH}.run"}
+
+  if [ -n "$RD_OUTPUT" -a "$RD_OUTPUT" = "$(basename $RD_OUTPUT)" ]; then
+    RD_OUTPUT="$(pwd)/$RD_OUTPUT"
+  fi
 fi
 
 # If clearing source tree was requested, do that first
-if [ "$RD_CLEAR" = "1" -o "$RD_CLEAR" = "yes" ]; then
+if [ "$RD_CLEAR" = "1" -o "$RD_CLEAR" = "yes" -o "$BUILD_MODE" = "runself" ]; then
   if ! clear_source_tree ; then
-	 exit 1
+   exit 1
   fi
 fi
 
-# If there's no ramdisk layout, make one now:
+# If there's no ramdisk or runself layout, make one now:
 if [ ! -d "$RD_LAYOUT" ]; then
+  echo "mistral: using tree layout $RD_LAYOUT"
   if prompt_yesno "About to create the initrd tree" ; then
-  	create_source_tree
+    create_source_tree
   else
-	 exit 1
+   exit 1
   fi
+fi
+
+if [ "$BUILD_MODE" = "runself" ]; then
+
+  # Copy needed binaries
+  copy_binaries
+
+  # Copy additional files
+  copy_additional_files
+
+  # Copy needed libraries
+  copy_libraries "prune"
+
+  # Copy overlay file layout
+  if [ -n "$RD_OVERLAY" ]; then
+    copy_overlay
+  fi
+
+  # Build runself archive
+  build_runself_archive "$PKGNAME" "$(which $PKGNAME)"
+  exit 0
 fi
 
 # If $RD_ROOTDEV and $RD_ROOTFS are not set, assume we want the
@@ -1120,7 +1363,7 @@ fi
 if [ -n "$RD_ROOTDEV" ]; then
   echo $RD_ROOTDEV > $RD_LAYOUT/etc/rd.conf/rootdev
 else
-  echo "[1;31mError: No root device specified ![0m"
+  echo "${COLOR_RED}Error: No root device specified !${COLOR_OFF}"
   exit 1
 fi
 
@@ -1128,14 +1371,14 @@ fi
 if [ -n "$RD_ROOTFS" ]; then
   echo $RD_ROOTFS > $RD_LAYOUT/etc/rd.conf/rootfs
 else
-  echo "[1;31mError: No root filesystem specified ![0m"
+  echo "${COLOR_RED}Error: No root filesystem specified !${COLOR_OFF}"
   exit 1
 fi
 
 if [ -z "$RD_FILESYSTEMS" ] ; then
-	RD_FILESYSTEMS="$ROOTFS"
+  RD_FILESYSTEMS="$ROOTFS"
 else
-	RD_FILESYSTEMS="$RD_FILESYSTEMS $ROOTFS"
+  RD_FILESYSTEMS="$RD_FILESYSTEMS $ROOTFS"
 fi
 
 if ! prompt_yesno "Warning: root device '$RD_ROOTUUID'" ; then
@@ -1150,7 +1393,7 @@ if [ -n "$RD_ROOTUUID" ]; then
   echo $RD_ROOTUUID > $RD_LAYOUT/etc/rd.conf/rootuuid
   RD_CMDLINE="root=$RD_ROOTUUID"
 else
-  echo "[1;31mError: No root device specified ![0m"
+  echo "${COLOR_RED}Error: No root device specified !${COLOR_OFF}"
   exit 1
 fi
 
@@ -1158,7 +1401,7 @@ if [ -n "$RD_LUKSUUID" ]; then
   echo "$RD_LUKSUUID:luksroot" > $RD_LAYOUT/etc/rd.conf/luksuuid
   RD_CMDLINE="$RD_CMDLINE rd.luks.root=UUID=$RD_LUKSUUID"
 elif [ "$RD_CRYPT" = "1" -o "$RD_CRYPT" = "yes" ]; then
-  echo "[1;31mError: No LUKS UUID for root device found ![0m"
+  echo "${COLOR_RED}Error: No LUKS UUID for root device found !${COLOR_OFF}"
   exit 1
 fi
 
@@ -1166,7 +1409,6 @@ fi
 RD_OUTPUT=${RD_OUTPUT:-"/boot/initramfs-${RD_PFX}-${RD_KVER}-${RD_ARCH}.img"}
 
 # Finally, write the image name into the RD_LAYOUT:
-#echo "$RD_OUTPUT" > $RD_LAYOUT/etc/rd.conf/initrd-name
 echo "$MKINITRD_NAME" > $RD_LAYOUT/etc/rd.conf/initrd-name
 
 # Fill resumedev with the swap partition holding the hibernation image
@@ -1182,10 +1424,10 @@ fi
 
 if echo "$RD_FILESYSTEMS" | grep -qF vfat ; then
   if ! echo "$RD_MODULES" | grep -qF vfat ; then
-		# This possibly adds doublures, but we clean up the MODULE_LIST further down!
-		RD_MODULES="scsi_mod:sd_mod:sr_mod:dm-mod:dm-crypt:usbhid:usb_storage"
-		RD_MODULES="$RD_MODULES:ehci-hcd:uhci-hcd:xhci-hcd:ehci-pci:usbhid:hid_generic"
-		RD_MODULES="$RD_MODULES:usb-storage:hid:nls_cp437:nls_iso8859-1:msdos:fat:vfat"
+    # This possibly adds doublures, but we clean up the MODULE_LIST further down!
+    RD_MODULES="scsi_mod:sd_mod:sr_mod:dm-mod:dm-crypt:usbhid:usb_storage"
+    RD_MODULES="$RD_MODULES:ehci-hcd:uhci-hcd:xhci-hcd:ehci-pci:usbhid:hid_generic"
+    RD_MODULES="$RD_MODULES:usb-storage:hid:nls_cp437:nls_iso8859-1:msdos:fat:vfat"
   fi
 fi
 
@@ -1246,10 +1488,6 @@ if [ -n "$RD_OVERLAY" ]; then
   copy_overlay
 fi
 
-if [ -n "$BUILD_BUSYBOX" ]; then
-	build_busybox
-fi
-
 # Make module directory:
 if [ ! -d $RD_LAYOUT/lib/modules/$RD_KVER ]; then
   mkdir -p $RD_LAYOUT/lib/modules/$RD_KVER || exit 1
@@ -1261,16 +1499,16 @@ for i in kmod depmod insmod lsmod modinfo modprobe rmmod ; do
   bin=$(which ${i})
 
   if [ -z "$bin" ]; then
-		echo "[1;35mError: no such binary -- ${i}[0m"
-		continue
-	fi
+    echo "${COLOR_MAGENTA}Error: no such binary -- ${i}${COLOR_OFF}"
+    continue
+  fi
 
   if [ -e "$bin" ]; then
     rm -f $RD_LAYOUT/sbin/${bin}
-		cp -a $bin $RD_LAYOUT/sbin
-	else
-		echo "[1;35mError: no such binary -- $bin[0m"
-	fi
+    cp -a $bin $RD_LAYOUT/sbin
+  else
+    echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
+  fi
 
   BINARIES="$BINARIES ${bin}"
 done
@@ -1297,6 +1535,9 @@ fi
 if [ -n "$RD_MODULES" ]; then
   copy_modules
 fi
+
+# Copy additional files
+copy_additional_files
 
 # Copy needed binaries
 copy_binaries

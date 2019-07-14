@@ -14,9 +14,11 @@ INTRODUCTION
 ============
 
 **mistral** is derived from *mkinitrd* from Slackware, and is used to build
-an initial ramdisk. An initial ramdisk is a very small set of files that
-are loaded into RAM and 'mounted' (as initramfs doesn't use a filesystem)
-as the kernel boots (before the main root filesystem is mounted).
+an initial ramdisk or runself archive.
+
+An initial ramdisk is a very small set of files that are loaded into RAM
+and 'mounted' (as initramfs doesn't use a filesystem) as the kernel boots
+(before the main root filesystem is mounted).
 
 An initrd is used when kernel modules need to be loaded before mounting
 the root partition. Usually these modules are required to support the root
@@ -27,6 +29,11 @@ to try to ship many different kernels to try to cover everyone's needs.
 It's a lot more flexible to ship a generic kernel and a set of kernel
 modules for it.
 
+A **runself** archive is a self-extracting shell archive with a built-in
+executable script. The **runself** script is derived from the script
+*Makeself* version 2.4.0. All **runself** archives are dependent on the
+**mistral** infra-structure.
+
 The command set of **mistral** is not compatible with the Slackware mkinitrd
 command set. If run without options, **mistral** will build an initrd image,
 based on your host machine's installation.
@@ -35,14 +42,14 @@ based on your host machine's installation.
 FEATURES
 ========
 
-   - Support for overlay file tree.
-   - Support for SysV and OpenRC.
-   - Support for RAID file systems.
-   - Support for LVM file systems.
-   - Support for LUKS encryption (WIP -- Work in Progress).
-   - Support for Frame Buffer splash (todo).
-   - Support for Mistral framebuffer splash (todo).
-   - Support for Plymouth framebuffer splash (todo).
+   - Support for overlay file tree (initrd/runself).
+   - Support for SysV and OpenRC (initrd).
+   - Support for RAID file systems (initrd).
+   - Support for LVM file systems (initrd).
+   - Support for LUKS encryption (initrd, WIP -- Work in Progress).
+   - Support for Frame Buffer splash (initrd, todo).
+   - Support for Mistral framebuffer splash (initrd, todo).
+   - Support for Plymouth framebuffer splash (initrd, todo).
 
 
 CONFIGURATION
@@ -55,20 +62,22 @@ CONFIGURATION
 EXAMPLES
 ========
 
-A simple example: Build an initrd for a reiserfs root partition:  
+Build an initrd for a reiserfs root partition:  
 
   mistral -c -f reiserfs  
 
-Another example:  Build an initrd image using Linux 2.6.33.1 kernel
-modules for a system with an ext3 root partition on /dev/sdb3:
+Build a runself archive for the package manager:  
+
+  mistral.runself -c brzpkg  
+
+Build an initrd image using Linux 2.6.33.1 kernel modules for a  
+system with an ext3 root partition on /dev/sdb3:
 
   mistral -c -k 2.6.33.1 -f ext3 -r /dev/sdb3  
 
 An example of a single encrypted partition setup:  
 
-  mistral -c -k 2.6.33.1 -C -L -R -U \  
-	 -f ext4 -r /dev/mapper/luksroot \  
-	 -M 'ehci-hcd uhci-hcd usbhid'
+  mistral -c -k 2.6.33.1 -C -L -R -U -f ext4 -r /dev/mapper/luksroot
 
 
 AUTHORS
