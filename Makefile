@@ -7,7 +7,7 @@ PREFIX := /usr
 SHELL := /bin/bash
 
 install: archive
-	@ tar --xz -cvf mistral-0.9.0.txz /etc/mistral $(PREFIX)/share/mistral/ $(PREFIX)/share/doc/mistral/ $(PREFIX)/sbin/mistral $(PREFIX)/share/man/man8/mistral.8.gz
+	@ tar --xz -cvf mistral-1.0.beta.txz /etc/mistral $(PREFIX)/share/mistral/ $(PREFIX)/share/doc/mistral/ $(PREFIX)/sbin/mistral $(PREFIX)/share/man/man8/mistral.8.gz
 
 archive:
 	@ (mkdir -p /etc/mistral)
@@ -23,7 +23,6 @@ archive:
 	@ (mkdir -p $(PREFIX)/share/mistral)
 	@ (chmod a+rx $(PREFIX)/share/mistral)
 	@ (cp -rf runself $(PREFIX)/share/mistral/)
-	@ (cp -rf data/bin $(PREFIX)/share/mistral/)
 	@ (cp -av data/keymaps.tar.gz $(PREFIX)/share/mistral/)
 	@ (cp -av data/busybox-1.31.0.tar.xz $(PREFIX)/share/mistral/)
 	@ (cp -av data/fbsplash $(PREFIX)/share/mistral/)
@@ -36,4 +35,5 @@ busybox:
 	@ (cd ./build/busybox-1.31.0 && ls -lt .config && make)
 	@ (mkdir data/bin)
 	@ (cp -f build/busybox-1.31.0/busybox data/bin/)
+	@ (cp -rf data/bin $(PREFIX)/share/mistral/)
 
