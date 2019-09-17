@@ -24,16 +24,17 @@ archive:
 	@ (chmod a+rx $(PREFIX)/share/mistral)
 	@ (cp -rf runself $(PREFIX)/share/mistral/)
 	@ (cp -av data/keymaps.tar.gz $(PREFIX)/share/mistral/)
+	@ (cp -av data/busybox-1.30.1.tar.xz $(PREFIX)/share/mistral/)
 	@ (cp -av data/busybox-1.31.0.tar.xz $(PREFIX)/share/mistral/)
 	@ (cp -av data/fbsplash $(PREFIX)/share/mistral/)
 	@ (cp -av data/initrd-tree-$(ARCH).tgz $(PREFIX)/share/mistral/initrd-tree.tar.gz)
 
 busybox:
 	@ (mkdir -p ./build)
-	@ (tar -C build -xvf data/busybox-1.31.0.tar.xz)
-	@ (cd ./build/busybox-1.31.0 && make menuconfig)
-	@ (cd ./build/busybox-1.31.0 && ls -lt .config && make)
+	@ (tar -C build -xvf data/busybox-1.30.1.tar.xz)
+	@ (cd ./build/busybox-1.30.1 && make menuconfig)
+	@ (cd ./build/busybox-1.30.1 && ls -lt .config && make)
 	@ (mkdir data/bin)
-	@ (cp -f build/busybox-1.31.0/busybox data/bin/)
+	@ (cp -f build/busybox-1.30.1/busybox data/bin/)
 	@ (cp -rf data/bin $(PREFIX)/share/mistral/)
 

@@ -1,5 +1,5 @@
 cat << EOF  > "$archname"
-#!/bin/bash -x
+#!/bin/bash
 # This script was generated using a modified Makeself $MS_VERSION
 # The license covering this archive and its contents, if any, is wholly independent of the Makeself license (GPL)
 
@@ -24,9 +24,10 @@ targetdir="$archdirname"
 filesizes="$filesizes"
 keep="$KEEP"
 nooverwrite="$NOOVERWRITE"
-skipexists="$SKIP_EXISTS"
 binpath="$BIN_PATH"
 binhash="$BIN_PATH_HASH"
+skipexists="n"
+skiphash="n"
 quiet="n"
 accept="n"
 nodiskspace="n"
@@ -162,7 +163,7 @@ MS_Help()
   --nokeep              Erase target folder after running the embedded script
   --noprogress          Do not show the progress during the decompression
   --nox11               Do not spawn an xterm
-  --noskip              Do not skip archive extraction
+  --skiphash            Skip archive checksum verification
   --nochown             Do not give the extracted files to the current user
   --nodiskspace         Do not check for available disk space
   --target dir          Extract directly to a target folder (absolute or relative)
@@ -290,8 +291,6 @@ MS_Decompress()
 
 UnTAR()
 {
-	set -x
-
     if test x"\$quiet" = xn; then
 		tar \$1vf - $UNTAR_EXTRA 2>&1 || { echo " ... Extraction failed." > /dev/tty; kill -15 \$$; }
     else
@@ -363,7 +362,6 @@ do
 	echo archdirname=\"\$archdirname\"
 	echo KEEP=\"$\KEEP\"
 	echo NOOVERWRITE=\"\$NOOVERWRITE\"
-	echo SKIP_EXISTS=\"\$SKIP_EXISTS\"
 	echo BIN_PATH=\"\$BIN_PATH\"
 	echo BIN_PATH_HASH=\"\$BIN_PATH_HASH\"
 	echo COMPRESS=\"\$COMPRESS\"
@@ -438,8 +436,8 @@ EOLSM
 	nox11=y
 	shift
 	;;
-    --noskip)
-	skipexists=n
+    --skiphash)
+	skiphash=y
 	shift
 	;;
     --nochown)
@@ -549,18 +547,23 @@ else
 				exit 1
 			fi
 
-			if [ ! -e "\$targetdir/\$binpath" ]; then
+			if test x"\$nooverwrite" = xn ; then
+				skipexists="n"
+			fi
+
+			if [ -n "\$binpath" -a ! -e "\$targetdir/\$binpath" ]; then
 				echo "$binpath does not exists, proceeding!" >&2
 				skipexists="n"
 			fi
 
-			if test x"\$skipexists" = xy ; then
+			if test x"\$nooverwrite" = xy && test x"\$skipexists" = xn ; then
 				shasig="\`sha512sum \$targetdir/\$binpath | cut -f1 -d' '\`"
 
 				if ! test "\$shasig" = "\$binhash" ; then
 					echo "\$binpath does not match runself archive, aborting!" >&2
 					exit 1
 				fi
+				skiphash="y"
 			fi
 		fi
 
@@ -585,7 +588,7 @@ fi
 
 location="\`pwd\`"
 
-if test x"\$SETUP_NOCHECK" != x1; then
+if test x"\$skiphash" = xn; then
     MS_Check "\$0"
 fi
 
@@ -664,13 +667,12 @@ if test x"\$script" != x; then
         MS_ARCHDIRNAME="\$archdirname"
         MS_KEEP="\$KEEP"
         MS_NOOVERWRITE="\$NOOVERWRITE"
-        MS_SKIP_EXISTS="\$SKIP_EXISTS"
         MS_BIN_PATH="\$BIN_PATH"
         MS_BIN_PATH_HASH="\$BIN_PATH_HASH"
         MS_COMPRESS="\$COMPRESS"
         export MS_BUNDLE MS_LABEL MS_SCRIPT MS_SCRIPTARGS
         export MS_ARCHDIRNAME MS_KEEP MS_NOOVERWRITE MS_COMPRESS
-        export MS_BIN_PATH MS_BIN_PATH_HASH MS_SKIP_EXISTS
+        export MS_BIN_PATH MS_BIN_PATH_HASH
     fi
 
     if test x"\$verbose" = x"y"; then

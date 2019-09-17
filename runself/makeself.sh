@@ -104,6 +104,7 @@ MS_Usage()
     echo
     echo "    --zip | -Z type    : Deflate using specified compresssion (gzip by default)"
     echo "    --complevel lvl    : Compression level for gzip pigz xz lzo lz4 bzip2 and pbzip2 (default 6)"
+    echo "    --verify | -V bin  : Verify the pkgname binary sha512 checksum"
     echo
     echo "    --base64           : Instead of compressing, encode the data using base64"
     echo "    --gpg-encrypt      : Instead of compressing, GnuPg encrypt the data"
@@ -176,7 +177,6 @@ DU_ARGS=-ks
 HEADER=`dirname "$0"`/makeself-header.sh
 TARGETDIR=""
 NOOVERWRITE=n
-SKIP_EXISTS=n
 
 DATE=`LC_ALL=C date`
 EXPORT_CONF=n
@@ -253,11 +253,10 @@ do
       NOOVERWRITE=y
 	  shift
     ;;
-    --skip-ifexists|-S)
+    --verify|-V)
       BIN_PATH="$2"
-      BIN_PATH_HASH="`sha512sum $2`"
-      SKIP_EXISTS=y
-	  if ! shift 2; then MS_Help; exit 1; fi
+      BIN_PATH_HASH="$(sha512sum $2 | cut -f1 -d' ')"
+      if ! shift 2; then MS_Help; exit 1; fi
     ;;
     --needroot)
 	  NEED_ROOT=y
