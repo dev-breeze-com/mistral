@@ -471,7 +471,6 @@ copy_binaries() {
   local bin=""
 
   echo "${COLOR_CYAN}Copying binaries ...${COLOR_OFF}"
-  rd_binaries="$rd_binaries mke2fs fsck e2fsck dosfsck fsck-e2fsprogs"
 
   for binary in $rd_binaries ; do
     bin="`which $binary`"
@@ -1608,6 +1607,7 @@ for i in kmod depmod insmod lsmod modinfo modprobe rmmod ; do
 done
 
 RD_BINARIES="$RD_BINARIES blkid lsblk findfs tr cut"
+RD_BINARIES="$RD_BINARIES mke2fs fsck e2fsck dosfsck fsck-e2fsprogs"
 
 # Make sure modules.builtin and modules.order are there (for kmod):
 cp -a /lib/modules/$RD_KVER/modules.builtin $RD_LAYOUT/lib/modules/$RD_KVER
