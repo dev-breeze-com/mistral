@@ -245,6 +245,7 @@ copy_block_devices() {
         if [ -L /dev/$device ]; then
           cp -a --parents $(readlink -e /dev/$device) $RD_LAYOUT/
         fi
+
         cp -a --parents /dev/$device $RD_LAYOUT/
       fi
     fi
@@ -254,7 +255,6 @@ copy_block_devices() {
 }
 
 clear_source_tree() {
-
   local answer="no"
 
   if [ -d "$RD_LAYOUT" ]; then
@@ -311,9 +311,8 @@ create_source_tree() {
 }
 
 build_busybox() {
-
   mkdir -p $RD_BUSYBOX || exit 1
-  
+
   if [ ! -e /usr/share/mistral/busybox-1.30.1.tar.xz ]; then
 	echo "${COLOR_RED}Error: failed to find packaged busybox${COLOR_OFF}"
 	return 1
@@ -468,21 +467,26 @@ copy_binaries() {
 
   local rd_binaries="$(cleanstr "$RD_BINARIES")"
   local rd_filesystems="$(cleanstr "$RD_FILESYSTEMS")"
+  local opts="--no-dereference --preserve=all"
   local bin=""
-  local times=0
 
   echo "${COLOR_CYAN}Copying binaries ...${COLOR_OFF}"
+  rd_binaries="$rd_binaries mke2fs fsck e2fsck dosfsck fsck-e2fsprogs"
 
   for binary in $rd_binaries ; do
     bin="`which $binary`"
-    echo "${COLOR_YELLOW}Copying binary $bin ...${COLOR_OFF}"
 
     if [ -n "$bin" ]; then
       if [ -e $bin ]; then
-         rm -f $RD_LAYOUT/${bin}
-         cp -P --parents $bin $RD_LAYOUT/
-       else
-         echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
+        echo "${COLOR_YELLOW}Copying binary $bin ...${COLOR_OFF}"
+        rm -f $RD_LAYOUT/${bin}
+        cp -P --parents $bin $RD_LAYOUT/
+        if [ -h $bin ]; then
+			bin="$(readlink $bin)"
+    		[ -n "$bin" ] && cp -P --parents $bin $RD_LAYOUT/
+		fi
+      else
+        echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
       fi
     fi
   done
@@ -494,8 +498,13 @@ copy_binaries() {
 
     if [ -n "$bin" ]; then
       if [ -e $bin ]; then
+        echo "${COLOR_YELLOW}Copying binary $bin ...${COLOR_OFF}"
         rm -f $RD_LAYOUT/${bin}
         cp -P --parents $bin $RD_LAYOUT/
+        if [ -h $bin ]; then
+			bin="$(readlink $bin)"
+    		[ -n "$bin" ] && cp -P --parents $bin $RD_LAYOUT/
+		fi
       else
         echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
       fi
@@ -505,8 +514,13 @@ copy_binaries() {
 
     if [ -n "$bin" ]; then
       if [ -e $bin ]; then
+        echo "${COLOR_YELLOW}Copying binary $bin ...${COLOR_OFF}"
         rm -f $RD_LAYOUT/${bin}
         cp -P --parents $bin $RD_LAYOUT/
+        if [ -h $bin ]; then
+			bin="$(readlink $bin)"
+    		[ -n "$bin" ] && cp -P --parents $bin $RD_LAYOUT/
+		fi
       else
         echo "${COLOR_MAGENTA}Error: no such binary -- $bin${COLOR_OFF}"
       fi
