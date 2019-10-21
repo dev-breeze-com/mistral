@@ -846,7 +846,7 @@ enable_vfatfs() {
   # Several extra modules are needed to support a vfat formatted USB stick...
   # assuming here we are using a western codepage.
   # This possibly adds doublures, but we clean up the MODULE_LIST further down!
-  if ! echo ${RD_MODULES} | grep -q vfat ; then
+  if ! echo ${RD_MODULES} | grep -qE '[v]?fat' ; then
     RD_MODULES="${RD_MODULES}:ehci-hcd:uhci-hcd:usb-storage:hid:usbhid"
     RD_MODULES="${RD_MODULES}:nls_cp437:nls_iso8859-1:msdos:fat:vfat"
   fi
@@ -1082,7 +1082,7 @@ elif [ -e /etc/mistral/initrd.conf ]; then
   BUILD_MODE="initrd"
   source_initrd_opts
 
-  RD_FILESYSTEMS=${RD_FILESYSTEMS:-"ext2 ext3 ext4 vfat"}
+  RD_FILESYSTEMS=${RD_FILESYSTEMS:-"ext2 ext3 ext4 vfat fat"}
   RD_BUSYBOX=${RD_BUSYBOX:-"/var/cache/mistral/busybox-tree"}
 
 else
@@ -1521,8 +1521,8 @@ if [ -n "$RD_KEYMAP" ]; then
   cp /usr/share/mistral/keymaps.tar.gz $RD_LAYOUT/etc/
 fi
 
-if echo "$RD_FILESYSTEMS" | grep -qF vfat ; then
-  if ! echo "$RD_MODULES" | grep -qF vfat ; then
+if echo "$RD_FILESYSTEMS" | grep -qE '[v]?fat' ; then
+  if ! echo "$RD_MODULES" | grep -qE '[v]?fat' ; then
     # This possibly adds doublures, but we clean up the MODULE_LIST further down!
     RD_MODULES="scsi_mod:sd_mod:sr_mod:dm-mod:dm-crypt:usbhid:usb_storage"
     RD_MODULES="$RD_MODULES:ehci-hcd:uhci-hcd:xhci-hcd:ehci-pci:usbhid:hid_generic"
