@@ -91,7 +91,7 @@ Usage: mistral [OPTION]
 mistral creates an initial ramdisk (actually an initramfs cpio+gzip
 archive) used to load kernel modules that are needed to mount the
 root filesystem, or other modules that might be needed before the
-root filesystem is available.  Other binaries may be added to the
+root filesystem is available. Other binaries may be added to the
 initrd, and the script is easy to modify.
 
   -h  Display help message.
@@ -201,10 +201,10 @@ prompt_yesno() {
   local answer="no"
 
   if [ "$ASSUME_YES" = "yes" ]; then
-  answer="yes"
+    answer="yes"
   else
-  echo -n "${1}, ${COLOR_YELLOW}proceed (n/y) [n] ? ${COLOR_OFF}"
-  read answer
+    echo -n "${1}, ${COLOR_YELLOW}proceed (n/y) [n] ? ${COLOR_OFF}"
+    read answer
   fi
 
   if [ "$answer" = "y" -o "$answer" = "yes" -o "$answer" = "Y" ]; then
@@ -311,6 +311,7 @@ create_source_tree() {
 }
 
 build_busybox() {
+
   mkdir -p $RD_BUSYBOX || exit 1
 
   if [ ! -e /usr/share/mistral/busybox-1.30.1.tar.xz ]; then
@@ -362,6 +363,7 @@ build_runself_archive() {
   # Wrap the runself app as a shell and compressed tar archive
   (
     cd $RD_LAYOUT
+
     $BIN_MKSELF --noclobber -Z $COMPRESSION \
       --verify $pkgpath \
       --sha512 --sha256 --md5 \
@@ -375,6 +377,65 @@ build_runself_archive() {
   )
 
   echo "${COLOR_GREEN}Created runself archive $runname -- done${COLOR_OFF}"
+  return 0
+}
+
+list_initrd_image() {
+
+  local files="$1"
+
+  for ramdisk in $files ; do
+	  if [ -e "$ramdisk" ]; then
+	    echo "${COLOR_YELLOW}Listing ramdisk $ramdisk ...${COLOR_OFF}"
+		if file $ramdisk | grep -qiF 'bzip2 compressed data' ; then
+	       bzcat $ramdisk | cpio -vt
+		elif file $ramdisk | grep -qiF 'xz compressed data' ; then
+	       xzcat $ramdisk | cpio -vt
+		else
+	       zcat $ramdisk | cpio -vt
+	    fi
+	  else
+		echo "${COLOR_RED}Error: no such ramdisk image -- $ramdisk ${COLOR_OFF}"
+	  fi
+  done
+
+  return 0
+}
+
+extract_initrd_image() {
+
+  local files="$1"
+
+  for ramdisk in $files ; do
+
+	  if [ ! -e "$ramdisk" ]; then
+		echo "${COLOR_RED}Error: no such ramdisk image -- $folder ${COLOR_OFF}"
+		return 1
+	  fi
+
+	  local folder="extract-$(basename $ramdisk)"
+
+	  if [ -e "$folder" -a ! -d "$folder" ]; then
+		echo "${COLOR_RED}Error: cannot cd into initramfs -- not a directory${COLOR_OFF}"
+		return 1;
+	  fi
+
+	  mkdir -p $folder
+
+	  echo "${COLOR_YELLOW}Extracting ramdisk $ramdisk ...${COLOR_OFF}"
+	  (
+		cd $folder
+
+		if file $ramdisk | grep -qiF 'bzip2 compressed data' ; then
+	       bzcat $ramdisk | cpio -mdiv
+		elif file $ramdisk | grep -qiF 'xz compressed data' ; then
+	       xzcat $ramdisk | cpio -mdiv
+		else
+	       zcat $ramdisk | cpio -mdiv
+	    fi
+	  )
+  done
+
   return 0
 }
 
@@ -1077,6 +1138,14 @@ if [ "`basename $0`" = "mistral.runself" ]; then
   BUILD_MODE="runself"
   source_runself_opts
 
+elif [ "`basename $0`" = "mistral.extract" ]; then
+  BUILD_MODE="extract"
+  source_initrd_opts
+
+elif [ "`basename $0`" = "mistral.list" ]; then
+  BUILD_MODE="listing"
+  source_initrd_opts
+
 elif [ -e /etc/mistral/initrd.conf ]; then
   BUILD_MODE="initrd"
   source_initrd_opts
@@ -1135,7 +1204,7 @@ while [ ! -z "$1" ]; do
       shift
       ;;
     -b)
-      check_opt "$1" "$2" '^(initrd|runself|busybox)$'
+      check_opt "$1" "$2" '^(initrd|runself|listing|extract|busybox)$'
       BUILD_MODE="$2"
 
       if [ "$BUILD_MODE" = "runself" ]; then
@@ -1271,6 +1340,9 @@ while [ ! -z "$1" ]; do
         [ -z "$PKGNAME" ] && PKGNAME="$1"
         [ -n "$RD_BINARIES" ] && RD_BINARIES="$RD_BINARIES $1"
         [ -z "$RD_BINARIES" ] && RD_BINARIES="$1"
+      elif [ "$BUILD_MODE" = "listing" -o "$BUILD_MODE" = "extract" ]; then
+        [ -z "$RD_INPUT" ] && RD_INPUT="$1"
+        [ -n "$RD_INPUT" ] && RD_INPUT="$RD_INPUT $1"
       else # unknown, prevent infinite loop
         echo "${COLOR_YELLOW}Invalid argument $1 !"
         exit 1
@@ -1295,10 +1367,20 @@ done
 # If BIN_ZIP was not set, then set it to gzip
 [ -z "$BIN_ZIP" ] && BIN_ZIP="gzip"
 
-if [ "$BUILD_MODE" = "busybox" ]; then
-  exec build_busybox
+if [ "$BUILD_MODE" = "listing" ]; then
+  list_initrd_image $RD_INPUT
+  exit $?
+
+elif [ "$BUILD_MODE" = "extract" ]; then
+   extract_initrd_image $RD_INPUT
+   exit $?
+
+elif [ "$BUILD_MODE" = "busybox" ]; then
+  build_busybox
+  exit $?
 
 elif [ "$BUILD_MODE" = "initrd" ]; then
+
   if ! prompt_yesno "Using kernel version $RD_KVER" ; then
    exit 1
   fi

@@ -18,6 +18,8 @@ archive:
 	@ (cp -av runself.conf /etc/mistral/)
 	@ (cp -f mkinitrd $(PREFIX)/sbin/mistral)
 	@ (cd $(PREFIX)/sbin && ln -sf mistral mistral.runself)
+	@ (cd $(PREFIX)/sbin && ln -sf mistral mistral.list)
+	@ (cd $(PREFIX)/sbin && ln -sf mistral mistral.extract)
 	@ (cp -av docs/man/man8 $(PREFIX)/share/man/)
 	@ (cp -av docs/mistral $(PREFIX)/share/doc/)
 	@ (mkdir -p $(PREFIX)/share/mistral)
