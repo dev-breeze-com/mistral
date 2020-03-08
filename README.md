@@ -14,7 +14,7 @@ INTRODUCTION
 ============
 
 **mistral** is derived from *mkinitrd* from Slackware, and is used to build
-an initial ramdisk or runself archive.
+an initial ramdisk, runself archive, or a backup archive (future release).
 
 An initial ramdisk is a very small set of files that are loaded into RAM
 and 'mounted' (as initramfs doesn't use a filesystem) as the kernel boots
@@ -34,6 +34,10 @@ executable script. The **runself** script is derived from the script
 *Makeself* version 2.4.0. All **runself** archives are dependent on the
 **mistral** infra-structure.
 
+A **backup** archive is either a self-extracting shell archive or a ramdisk
+like **cpio** archive. All **backup** archives are dependent on the
+**mistral** infra-structure.
+
 The command set of **mistral** is not compatible with the Slackware mkinitrd
 command set. If run without options, **mistral** will build an initrd image,
 based on your host machine's installation.
@@ -50,6 +54,7 @@ FEATURES
    - Support for Frame Buffer splash (initrd, todo).
    - Support for Mistral framebuffer splash (initrd, todo).
    - Support for Plymouth framebuffer splash (initrd, todo).
+   - Support for incremental backup archives (backup, todo).
 
 
 CONFIGURATION
